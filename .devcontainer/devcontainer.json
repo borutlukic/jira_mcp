@@ -1,0 +1,19 @@
+{
+	"name": "JiraMCPDev",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"build": { "dockerfile": "Dockerfile" },
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "lts"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"installDirectlyFromGitHubRelease": true,
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers-extra/features/claude-code:1": {
+			"version": "latest"
+		},
+		"ghcr.io/siri404/devcontainer-ai-features/mcp-inspector:1": {}
+	},
+	"postCreateCommand": "npm install -g @anthropic-ai/mcpb"
+}

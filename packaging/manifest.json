@@ -1,0 +1,90 @@
+{
+  "manifest_version": "0.3",
+  "name": "jira-mcp",
+  "display_name": "Jira MCP Server",
+  "version": "0.1.0",
+  "description": "MCP server for interacting with a Jira DataCenter instance",
+  "author": {
+    "name": "jira-mcp"
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/jira-mcp-server-linux-x86_64",
+    "mcp_config": {
+      "command": "${__dirname}/server/jira-mcp-server-linux-x86_64",
+      "args": [
+        "--jira-url", "${user_config.jira_url}",
+        "--jira-token", "${user_config.jira_token}"
+      ],
+      "platform_overrides": {
+        "win32": {
+          "command": "${__dirname}/server/jira-mcp-server.exe"
+        }
+      }
+    }
+  },
+  "compatibility": {
+    "platforms": ["win32", "linux"]
+  },
+  "user_config": {
+    "jira_url": {
+      "type": "string",
+      "title": "Jira Base URL",
+      "description": "The base URL of your Jira DataCenter instance (e.g. https://jira.example.com/rest)",
+      "required": true
+    },
+    "jira_token": {
+      "type": "string",
+      "title": "Jira Personal Access Token",
+      "description": "Your Jira personal access token for authentication",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    {
+      "name": "jira_get_current_user",
+      "description": "Get current Jira user information. Pass structured=true to get a JSON object with name, display_name, and email."
+    },
+    {
+      "name": "jira_search_issue",
+      "description": "Search for Jira issues using JQL (Jira Query Language). Returns key details like summary, status, assignee, and priority for matching issues"
+    },
+    {
+      "name": "jira_get_issue",
+      "description": "Get a Jira issue by ID or key, including all fields and comments"
+    },
+    {
+      "name": "jira_create_issue",
+      "description": "Create a new Jira issue in a project"
+    },
+    {
+      "name": "jira_update_issue",
+      "description": "Update fields of an existing Jira issue. Only the fields you provide will be changed. To transition the issue status, provide a 'status' value matching an available transition name."
+    },
+    {
+      "name": "jira_add_comment",
+      "description": "Add a comment to a Jira issue"
+    },
+    {
+      "name": "jira_get_transitions",
+      "description": "List available workflow transitions for a Jira issue. Use this to discover valid status values before calling jira_update_issue with a 'status' field."
+    },
+    {
+      "name": "jira_get_worklogs",
+      "description": "Get all worklogs updated since a given Unix timestamp in milliseconds. Paginates automatically until all results are collected. Returns worklog details including author, time spent, and dates."
+    },
+    {
+      "name": "jira_add_worklog",
+      "description": "Log work on a Jira issue. time_spent uses Jira duration format (e.g. '1h 30m'). started is an ISO 8601 datetime; defaults to now if omitted."
+    },
+    {
+      "name": "jira_get_all_projects",
+      "description": "List all Jira projects accessible to the current user"
+    },
+    {
+      "name": "jira_get_all_project_types",
+      "description": "List all Jira project types available on this instance"
+    }
+  ]
+}
