@@ -2,21 +2,20 @@
 
 A Rust-based MCP (Model Context Protocol) server that provides tools for interacting with a Jira DataCenter instance. It is distributed as an `.mcpb` (MCP Bundle) package.
 
-## Workspace Structure
-
-This is a Cargo workspace with two crates:
+## Project Structure
 
 - **`src/`** — The `jira_mcp` binary crate: the MCP server executable. See `src/CLAUDE.md` for details.
-- **`jira_api/`** — A library crate providing the Jira API client. See `jira_api/CLAUDE.md` for details.
 - **`packaging/`** — Assets and layout for the `.mcpb` bundle. See `packaging/CLAUDE.md` for details.
+
+The Jira API client library lives in a separate repo: [borutlukic/jira_api](https://github.com/borutlukic/jira_api) (branch `dc_11003`). It is referenced as a git dependency in `Cargo.toml`.
 
 ## Key Dependencies
 
 - [`rmcp`](https://crates.io/crates/rmcp) — MCP server/client framework with stdio transport
 - [`tokio`](https://crates.io/crates/tokio) — Async runtime
 - [`clap`](https://crates.io/crates/clap) — CLI argument parsing (also reads from env vars)
-- [`reqwest`](https://crates.io/crates/reqwest) / `reqwest-middleware` / `reqwest-tracing` — HTTP client stack (shared workspace deps)
-- [`serde`](https://crates.io/crates/serde) / `serde_json` — Serialization (shared workspace deps)
+- [`reqwest`](https://crates.io/crates/reqwest) / `reqwest-middleware` / `reqwest-tracing` — HTTP client stack
+- [`serde`](https://crates.io/crates/serde) / `serde_json` — Serialization
 
 ## Build System (Makefile)
 
