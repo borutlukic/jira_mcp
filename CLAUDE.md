@@ -23,12 +23,16 @@ All build targets use cross-compilation. Run `make setup` once to install the re
 
 | Target | Description |
 |--------|-------------|
-| `make setup` | Install cross-compilation targets (`x86_64-unknown-linux-gnu`, `x86_64-pc-windows-gnu`) |
+| `make setup` | Install cross-compilation targets and clone the macOS SDK (`phracker/MacOSX-SDKs` → `~/macos-sdk`) |
 | `make linux` | Build release binary for Linux → `packaging/server/jira-mcp-server-linux-x86_64` |
 | `make windows` | Build release binary for Windows → `packaging/server/jira-mcp-server.exe` |
-| `make pack` | Run `mcpb pack` to produce `target/jira-mcp-server.mcpb` (requires both binaries) |
-| `make all` | Run `linux` + `windows` + `pack` |
+| `make mac-x86` | Build release binary for macOS x86_64 → `packaging/server/jira-mcp-server-macos-x86_64` (uses osxcross) |
+| `make mac-arm` | Build release binary for macOS aarch64 → `packaging/server/jira-mcp-server-macos-aarch64` (uses osxcross) |
+| `make pack` | Run `mcpb pack` to produce `target/jira-mcp-server.mcpb` (requires all four binaries) |
+| `make all` | Run `linux` + `windows` + `mac-x86` + `mac-arm` + `pack` |
 | `make clean` | Remove build artifacts and output binaries |
+
+macOS builds use [osxcross](https://github.com/tpoechtrager/osxcross) pre-installed in the devcontainer at `/opt/osxcross`. The toolchain is built from `MacOSX11.3.sdk` (sourced from `phracker/MacOSX-SDKs`) and supports both x86_64 and aarch64.
 
 ## Runtime Configuration
 

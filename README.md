@@ -50,7 +50,9 @@ make all     # build Linux + Windows binaries and produce .mcpb bundle
 |--------|-------------|
 | `make linux` | Build Linux binary → `packaging/server/jira-mcp-server-linux-x86_64` |
 | `make windows` | Build Windows binary → `packaging/server/jira-mcp-server.exe` |
-| `make pack` | Package both binaries into `target/jira-mcp-server.mcpb` |
+| `make mac-x86` | Build MacOSX x86 binary → `packaging/server/jira-mcp-server-macos-x86_64` |
+| `make mac-arm` | Build MacOSX arm binary → `packaging/server/jira-mcp-server-macos-aarch64` |
+| `make pack` | Package all binaries into `target/jira-mcp-server.mcpb` |
 | `make clean` | Remove build artifacts |
 
 ## Dependencies

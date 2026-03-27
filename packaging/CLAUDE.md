@@ -40,20 +40,5 @@ I want to build this as a MCP Bundle, abbreviated as "MCPB". Please follow these
 
 List every `#[tool]` function found under `src/server/`:
 
-| Tool name | Description |
-|-----------|-------------|
-| `jira_get_current_user` | Get jira user information. (in `tool_user.rs`) |
-| `jira_search_issue` | Search for Jira issues using JQL (Jira Query Language). Returns key details like summary, status, assignee, and priority for matching issues. (in `tool_search.rs`) |
-
 **Before generating the manifest**, grep `src/server/` for `#[tool(` to get the up-to-date list and descriptions, as new tools may have been added since this file was written.
 
-## Bundle Layout
-
-```
-packaging/
-├── manifest.json
-├── icon.png
-└── server/
-    ├── jira-mcp-server-linux-x86_64   ← Linux binary (from make linux)
-    └── jira-mcp-server.exe            ← Windows binary (from make windows)
-```
