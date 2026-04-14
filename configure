@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: ./configure [OPTIONS]
+
+Select which platforms to include in the bundle. Writes config.mk and
+regenerates packaging/manifest.json. Run before 'make' or 'make pack'.
+
+Options:
+  --linux      Linux (x86_64)
+  --windows    Windows (x86_64)
+  --mac        macOS x86_64 and aarch64
+  --mac-x86    macOS x86_64 only
+  --mac-arm    macOS aarch64 only
+  --help       Show this help
+
+If no flags are provided, all platforms are included.
+
+Examples:
+  ./configure                    # All platforms (default)
+  ./configure --linux --windows  # Linux and Windows only
+  ./configure --mac              # Both macOS variants
+  ./configure --linux            # Linux only
+EOF
+}
+
+BUILD_LINUX=
+BUILD_WINDOWS=
+BUILD_MAC_X86=
+BUILD_MAC_ARM=
+
+for arg in "$@"; do
+    case "$arg" in
+        --linux)     BUILD_LINUX=1 ;;
+        --windows)   BUILD_WINDOWS=1 ;;
+        --mac)       BUILD_MAC_X86=1; BUILD_MAC_ARM=1 ;;
+        --mac-x86)   BUILD_MAC_X86=1 ;;
+        --mac-arm)   BUILD_MAC_ARM=1 ;;
+        --help | -h) usage; exit 0 ;;
+        *)           echo "error: unknown option: $arg" >&2; usage >&2; exit 1 ;;
+    esac
+done
+
+# Default to all platforms if none were specified
+if [ -z "$BUILD_LINUX" ] && [ -z "$BUILD_WINDOWS" ] && [ -z "$BUILD_MAC_X86" ] && [ -z "$BUILD_MAC_ARM" ]; then
+    BUILD_LINUX=1; BUILD_WINDOWS=1; BUILD_MAC_X86=1; BUILD_MAC_ARM=1
+fi
+
+BUILD_LINUX=${BUILD_LINUX:-0}
+BUILD_WINDOWS=${BUILD_WINDOWS:-0}
+BUILD_MAC_X86=${BUILD_MAC_X86:-0}
+BUILD_MAC_ARM=${BUILD_MAC_ARM:-0}
+
+# --- Write config.mk ---
+cat > config.mk <<EOF
+BUILD_LINUX   := $BUILD_LINUX
+BUILD_WINDOWS := $BUILD_WINDOWS
+BUILD_MAC_X86 := $BUILD_MAC_X86
+BUILD_MAC_ARM := $BUILD_MAC_ARM
+EOF
+
+# --- Regenerate packaging/manifest.json ---
+BUILD_LINUX=$BUILD_LINUX \
+BUILD_WINDOWS=$BUILD_WINDOWS \
+BUILD_MAC_X86=$BUILD_MAC_X86 \
+BUILD_MAC_ARM=$BUILD_MAC_ARM \
+python3 <<'PYEOF'
+import os, json, re, sys
+
+build_linux   = int(os.environ['BUILD_LINUX'])
+build_windows = int(os.environ['BUILD_WINDOWS'])
+build_mac_x86 = int(os.environ['BUILD_MAC_X86'])
+build_mac_arm = int(os.environ['BUILD_MAC_ARM'])
+
+# Read version from Cargo.toml
+with open('Cargo.toml') as f:
+    cargo = f.read()
+m = re.search(r'^version\s*=\s*"([^"]+)"', cargo, re.MULTILINE)
+version = m.group(1) if m else '0.0.0'
+
+# Read static fields from the committed base template
+with open('manifest.base.json') as f:
+    base = json.load(f)
+tools       = base['tools']
+user_config = base['user_config']
+description = base['description']
+author      = base['author']
+
+# Platform definitions in priority order (linux > windows > mac-x86 > mac-arm)
+PLATFORM_ORDER = ['linux', 'windows', 'mac-x86', 'mac-arm']
+PLATFORMS = {
+    'linux': {
+        'compat':       'linux',
+        'entry':        'server/jira-mcp-server-linux-x86_64',
+        'command':      '${__dirname}/server/jira-mcp-server-linux-x86_64',
+        'override_key': None,  # this is the default; no override needed
+    },
+    'windows': {
+        'compat':       'win32',
+        'entry':        'server/jira-mcp-server.exe',
+        'command':      '${__dirname}/server/jira-mcp-server.exe',
+        'override_key': 'win32',
+    },
+    'mac-x86': {
+        'compat':       'darwin',
+        'entry':        'server/jira-mcp-server-macos-x86_64',
+        'command':      '${__dirname}/server/jira-mcp-server-macos-x86_64',
+        'override_key': 'darwin-x64',
+    },
+    'mac-arm': {
+        'compat':       'darwin',
+        'entry':        'server/jira-mcp-server-macos-aarch64',
+        'command':      '${__dirname}/server/jira-mcp-server-macos-aarch64',
+        'override_key': 'darwin-arm64',
+    },
+}
+
+enabled = {
+    'linux':   build_linux,
+    'windows': build_windows,
+    'mac-x86': build_mac_x86,
+    'mac-arm': build_mac_arm,
+}
+
+selected = [p for p in PLATFORM_ORDER if enabled[p]]
+if not selected:
+    print('error: no platforms selected', file=sys.stderr)
+    sys.exit(1)
+
+# The first selected platform is the default (determines entry_point and command)
+default_def = PLATFORMS[selected[0]]
+
+# compatibility.platforms — ordered and deduplicated
+compat_seen = set()
+compat = []
+for p in selected:
+    c = PLATFORMS[p]['compat']
+    if c not in compat_seen:
+        compat_seen.add(c)
+        compat.append(c)
+
+# platform_overrides — all non-default selected platforms
+overrides = {}
+for p in selected[1:]:
+    key = PLATFORMS[p]['override_key']
+    if key:
+        overrides[key] = {'command': PLATFORMS[p]['command']}
+
+mcp_config = {
+    'command': default_def['command'],
+    'args': ['--jira-url', '${user_config.jira_url}', '--jira-token', '${user_config.jira_token}'],
+}
+if overrides:
+    mcp_config['platform_overrides'] = overrides
+
+manifest = {
+    'manifest_version': '0.3',
+    'name':             'jira-mcp',
+    'display_name':     'Jira MCP Server',
+    'version':          version,
+    'description':      description,
+    'author':           author,
+    'server': {
+        'type':        'binary',
+        'entry_point': default_def['entry'],
+        'mcp_config':  mcp_config,
+    },
+    'compatibility': {'platforms': compat},
+    'user_config':   user_config,
+    'tools':         tools,
+}
+
+with open('packaging/manifest.json', 'w') as f:
+    json.dump(manifest, f, indent=2)
+    f.write('\n')
+PYEOF
+
+# --- Print summary ---
+echo "Configured platforms:"
+[ "$BUILD_LINUX"   = "1" ] && echo "  linux    — Linux x86_64"
+[ "$BUILD_WINDOWS" = "1" ] && echo "  windows  — Windows x86_64"
+[ "$BUILD_MAC_X86" = "1" ] && echo "  mac-x86  — macOS x86_64"
+[ "$BUILD_MAC_ARM" = "1" ] && echo "  mac-arm  — macOS aarch64"
+echo ""
+echo "Updated packaging/manifest.json"
+echo "Run 'make' to build."

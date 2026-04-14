@@ -1,36 +1,7 @@
 {
-  "manifest_version": "0.3",
-  "name": "jira-mcp",
-  "display_name": "Jira MCP Server",
-  "version": "0.1.0",
   "description": "MCP server for interacting with a Jira DataCenter instance",
   "author": {
     "name": "jira-mcp"
-  },
-  "server": {
-    "type": "binary",
-    "entry_point": "server/jira-mcp-server-linux-x86_64",
-    "mcp_config": {
-      "command": "${__dirname}/server/jira-mcp-server-linux-x86_64",
-      "args": [
-        "--jira-url", "${user_config.jira_url}",
-        "--jira-token", "${user_config.jira_token}"
-      ],
-      "platform_overrides": {
-        "win32": {
-          "command": "${__dirname}/server/jira-mcp-server.exe"
-        },
-        "darwin-x64": {
-          "command": "${__dirname}/server/jira-mcp-server-macos-x86_64"
-        },
-        "darwin-arm64": {
-          "command": "${__dirname}/server/jira-mcp-server-macos-aarch64"
-        }
-      }
-    }
-  },
-  "compatibility": {
-    "platforms": ["win32", "linux", "darwin"]
   },
   "user_config": {
     "jira_url": {

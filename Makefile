@@ -12,12 +12,40 @@ MCPB_OUT     := target/jira-mcp-server.mcpb
 MACOS_SDK    := /home/vscode/macos-sdk
 OSXCROSS_DIR := /opt/osxcross
 
+# Platform selection — written by ./configure, defaults to all platforms
+-include config.mk
+BUILD_LINUX   ?= 1
+BUILD_WINDOWS ?= 1
+BUILD_MAC_X86 ?= 1
+BUILD_MAC_ARM ?= 1
+
+BUILD_TARGETS :=
+RUST_TARGETS  :=
+ifeq ($(BUILD_LINUX),1)
+BUILD_TARGETS += linux
+RUST_TARGETS  += $(LINUX_TARGET)
+endif
+ifeq ($(BUILD_WINDOWS),1)
+BUILD_TARGETS += windows
+RUST_TARGETS  += $(WINDOWS_TARGET)
+endif
+ifeq ($(BUILD_MAC_X86),1)
+BUILD_TARGETS += mac-x86
+RUST_TARGETS  += $(MAC_X86_TARGET)
+endif
+ifeq ($(BUILD_MAC_ARM),1)
+BUILD_TARGETS += mac-arm
+RUST_TARGETS  += $(MAC_ARM_TARGET)
+endif
+
 .PHONY: all linux windows mac-x86 mac-arm setup pack clean
 
-all: linux windows mac-x86 mac-arm pack
+all: pack
 
 setup:
-	rustup target add $(LINUX_TARGET) $(WINDOWS_TARGET) $(MAC_X86_TARGET) $(MAC_ARM_TARGET)
+	@if [ -n "$(RUST_TARGETS)" ]; then \
+		rustup target add $(RUST_TARGETS); \
+	fi
 
 linux: setup
 	cargo build --release --target $(LINUX_TARGET)
@@ -45,7 +73,7 @@ mac-arm: setup
 		cargo build --target $(MAC_ARM_TARGET) --release
 	cp target/$(MAC_ARM_TARGET)/release/jira_mcp $(MAC_ARM_BIN)
 
-pack: linux windows mac-x86 mac-arm
+pack: $(BUILD_TARGETS)
 	mcpb pack packaging $(MCPB_OUT)
 
 clean:

@@ -1,2 +1,4 @@
 /target
 /packaging/server/
+/config.mk
+/packaging/manifest.json
