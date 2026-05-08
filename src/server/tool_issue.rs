@@ -8,7 +8,7 @@ use rmcp::{
 use std::collections::BTreeMap;
 
 use jira_api::types::{
-    CommentJsonBean, IssueUpdateBean, IssueUpdateBeanFields, TransitionBean,
+    CommentJsonBean, IssueBean, IssueUpdateBean, IssueUpdateBeanFields, TransitionBean,
 };
 use crate::server::jira::Jira;
 use crate::server::util::format_issue;
@@ -25,6 +25,8 @@ struct GetIssueParams {
     properties: Option<String>,
     /// Maximum number of comments to include. Defaults to 10. Use 0 to fetch all comments.
     comment_limit: Option<u32>,
+    /// If true, return raw JSON ({"issue": ..., "comments": [...]}) instead of formatted text.
+    structured: Option<bool>,
 }
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
@@ -79,7 +81,7 @@ struct AddCommentParams {
 
 #[tool_router(router = issue_tool_router, vis = "pub(crate)")]
 impl Jira {
-    #[tool(description = "Get a Jira issue by ID or key, including all fields and comments")]
+    #[tool(description = "Get a Jira issue by ID or key, including all fields and comments. Set 'structured: true' to receive raw JSON ({\"issue\": ..., \"comments\": [...]}) instead of formatted text.")]
     async fn jira_get_issue(
         &self,
         ctx: RequestContext<RoleServer>,
@@ -107,8 +109,6 @@ impl Jira {
             Err(e) => return self.jira_client_error_response(&e),
         };
 
-        let mut out = format_issue(&issue);
-
         // Fetch comments with optional limit
         let comment_limit = params.comment_limit.unwrap_or(10);
         let max_results = if comment_limit == 0 {
@@ -117,7 +117,7 @@ impl Jira {
             Some(comment_limit.to_string())
         };
 
-        match client
+        let (comments, comments_total) = match client
             .get_comments(
                 &params.issue_id_or_key,
                 None::<String>,
@@ -129,28 +129,21 @@ impl Jira {
         {
             Ok(comments_bean) => {
                 let total = comments_bean.total.unwrap_or(0);
-                let comments = comments_bean.comments.unwrap_or_default();
-                if !comments.is_empty() {
-                    let header = if comment_limit > 0 && total > comment_limit as i32 {
-                        format!(
-                            "\n--- Comments (showing {} of {}) ---\n",
-                            comments.len(),
-                            total
-                        )
-                    } else {
-                        format!("\n--- Comments ({}) ---\n", comments.len())
-                    };
-                    out.push_str(&header);
-                    for comment in &comments {
-                        out.push_str(&format_comment(comment));
-                        out.push_str("---\n");
-                    }
-                }
+                (comments_bean.comments.unwrap_or_default(), total)
             }
-            Err(_) => {} // best-effort; issue data already returned above
+            Err(_) => (Vec::new(), 0), // best-effort; issue data already returned above
+        };
+
+        if params.structured.unwrap_or(false) {
+            let value = serde_json::json!({
+                "issue": issue,
+                "comments": comments,
+            });
+            return serde_json::to_string_pretty(&value)
+                .unwrap_or_else(|_| format_text_output(&issue, &comments, comments_total, comment_limit));
         }
 
-        out
+        format_text_output(&issue, &comments, comments_total, comment_limit)
     }
 
     #[tool(description = "Create a new Jira issue in a project")]
@@ -411,6 +404,34 @@ impl Jira {
             Err(e) => self.jira_client_error_response(&e),
         }
     }
+}
+
+fn format_text_output(
+    issue: &IssueBean,
+    comments: &[CommentJsonBean],
+    comments_total: i32,
+    comment_limit: u32,
+) -> String {
+    let mut out = format_issue(issue);
+
+    if !comments.is_empty() {
+        let header = if comment_limit > 0 && comments_total > comment_limit as i32 {
+            format!(
+                "\n--- Comments (showing {} of {}) ---\n",
+                comments.len(),
+                comments_total
+            )
+        } else {
+            format!("\n--- Comments ({}) ---\n", comments.len())
+        };
+        out.push_str(&header);
+        for comment in comments {
+            out.push_str(&format_comment(comment));
+            out.push_str("---\n");
+        }
+    }
+
+    out
 }
 
 fn format_comment(comment: &CommentJsonBean) -> String {

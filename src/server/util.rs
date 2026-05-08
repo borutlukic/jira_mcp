@@ -231,14 +231,21 @@ pub(crate) fn format_issue(issue: &IssueBean) -> String {
             }
         }
 
-        // Description (plain string or ADF)
-        if let Some(desc) = fields.get("description") {
-            if !desc.is_null() {
+        // Description: DataCenter returns a plain string (wiki markup); Cloud returns an ADF object.
+        match fields.get("description") {
+            Some(serde_json::Value::String(s)) => {
+                let trimmed = s.trim();
+                if !trimmed.is_empty() {
+                    out.push_str(&format!("Description:\n{}\n", trimmed));
+                }
+            }
+            Some(desc @ serde_json::Value::Object(_)) => {
                 let rendered = render_adf(desc);
                 if !rendered.is_empty() {
                     out.push_str(&format!("Description:\n{}\n", rendered));
                 }
             }
+            _ => {}
         }
 
         // Issue Type

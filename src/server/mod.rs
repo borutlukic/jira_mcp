@@ -1,6 +1,7 @@
 
 mod jira;
 mod server;
+mod tool_field;
 mod tool_issue;
 mod tool_project;
 mod tool_search;

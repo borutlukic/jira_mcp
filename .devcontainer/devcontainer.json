@@ -1,7 +1,8 @@
 {
 	"name": "JiraMCPDev",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"build": { "dockerfile": "Dockerfile" },
+	//"build": { "dockerfile": "Dockerfile" },
+	"image": "mcr.microsoft.com/devcontainers/rust:trixie",
 	"features": {
 		"ghcr.io/devcontainers/features/node:1": {
 			"version": "lts"

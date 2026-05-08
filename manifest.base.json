@@ -62,6 +62,10 @@
     {
       "name": "jira_get_all_project_types",
       "description": "List all Jira project types available on this instance"
+    },
+    {
+      "name": "jira_get_fields",
+      "description": "List Jira field metadata (system + custom). Use this to discover customfield_* IDs needed for JQL queries or jira_update_issue. Set 'search: <text>' to return only fields whose name, id, or clauseNames contain the text (case-insensitive). Set 'custom_only: true' to return only custom fields. Set 'structured: true' to receive raw JSON instead of formatted text."
     }
   ]
 }

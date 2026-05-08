@@ -23,12 +23,12 @@ impl ServerBuilder {
 
     pub fn build(self, base_url: String, token: String) -> Result<Server> {
         let client = HttpClient::new()
-            .with_base_url(base_url)
-            .with_api_key(token);
+            .with_base_url(base_url.clone())
+            .with_api_key(token.clone());
 
         Ok(Server {
             transport: self.transport,
-            handler: Jira::new(client),
+            handler: Jira::new(client, base_url, token),
         })
     }
 }

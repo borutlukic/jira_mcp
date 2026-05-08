@@ -9,23 +9,36 @@ use rmcp::{
 
 pub struct Jira {
     client: HttpClient,
+    base_url: String,
+    token: String,
     pub(crate) tool_router: ToolRouter<Self>,
 }
 
 impl Jira {
-    pub fn new(client: HttpClient) -> Self {
+    pub fn new(client: HttpClient, base_url: String, token: String) -> Self {
         Self {
             tool_router: Self::search_tool_router()
                 + Self::user_tool_router()
                 + Self::issue_tool_router()
                 + Self::worklog_tool_router()
-                + Self::project_tool_router(),
+                + Self::project_tool_router()
+                + Self::field_tool_router(),
             client,
+            base_url,
+            token,
         }
     }
 
     pub(crate) fn get_jira_client(&self, _ctx: &RequestContext<RoleServer>) -> &HttpClient {
         &self.client
+    }
+
+    pub(crate) fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    pub(crate) fn token(&self) -> &str {
+        &self.token
     }
 
     pub(crate) fn jira_client_error_response(&self, e: &jira_api::HttpError) -> String {

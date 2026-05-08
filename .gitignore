@@ -1,4 +1,8 @@
 /target
 /packaging/server/
-/config.mk
 /packaging/manifest.json
+/config.mk
+/.claude
+/.vscode
+/.cargo
+/.devcontainer/devcontainer-lock.json

@@ -1081,11 +1081,12 @@ dependencies = [
 
 [[package]]
 name = "jira_mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "clap",
  "jira_api",
+ "reqwest 0.13.2",
  "rmcp",
  "serde",
  "serde_json",
